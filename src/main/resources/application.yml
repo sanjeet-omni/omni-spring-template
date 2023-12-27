@@ -1,0 +1,80 @@
+management:
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        step: 10s
+  endpoints:
+    web:
+      exposure:
+        include: [ "health","info","prometheus","metrics" ]
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+
+logging:
+  level:
+    org:
+      springframework:
+        web:
+          servlet:
+            DispatcherServlet: DEBUG
+    root: INFO
+
+spring:
+  application:
+    name: omni-spring-template
+  cloud:
+    zookeeper:
+      config:
+        enabled: true
+        root: /services
+  config:
+    activate:
+      on-profile: default,dev
+    import: zookeeper:zookeeper.configuration.svc.cluster.local:2181
+  zipkin:
+    baseUrl: http://zipkin.tracing.svc.cluster.local:9411/
+    sender:
+      type: web
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=omni-spring-template
+    username: postgres
+    password: postgres
+  liquibase:
+    change-log: classpath:db/changelog-master.yml
+    default-schema: "omni-spring-template"
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+
+service:
+  ehs:
+    url: "http://ehs-service.l2.svc.cluster.local:8080"
+rabbit:
+  host: rabbitmq.queue.svc.cluster.local
+  port: 5672
+  username: admin
+  password: admin
+
+springdoc:
+  swagger-ui:
+    config-url: /${spring.application.name}/v3/api-docs/swagger-config
+    urls:
+      - name: ${spring.application.name}-api
+        display-name: ${spring.application.name} APIs
+        url: /${spring.application.name}/v3/api-docs
+server:
+  compression:
+    enabled: true
+    mime-types: application/json

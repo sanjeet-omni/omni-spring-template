@@ -1,0 +1,99 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.2.1'
+	id 'io.spring.dependency-management' version '1.1.4'
+	// Plugin for generating k8s resources and helm chart create/publish
+	// https://www.eclipse.org/jkube/docs/kubernetes-gradle-plugin/
+	id 'org.eclipse.jkube.kubernetes' version '1.10.1'
+}
+
+group = 'com.saison.omni'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = '17'
+}
+
+repositories {
+	mavenCentral()
+	maven {
+		url "$artifactoryUrl"
+		credentials {
+			username "aws"
+			password "$codeartifactToken"
+		}
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+kubernetes {
+	resources {
+		namespace = 'los'
+	}
+	enricher {
+		config {
+			'jkube-prometheus' {
+				prometheusPath = '/actuator/prometheus'
+				prometheusPort = 8080
+			}
+			'jkube-healthcheck-spring-boot' {
+				failureThreshold = '10'
+			}
+		}
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	// Spring actuator - metrics
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// Spring sleuth - tracing
+	implementation 'org.springframework.cloud:spring-cloud-starter-sleuth:3.1.10'
+	// Zipkin - tracing
+	implementation 'org.springframework.cloud:spring-cloud-sleuth-zipkin:3.1.10'
+	// prometheus - metrics
+	implementation 'io.micrometer:micrometer-registry-prometheus:1.12.1'
+	// ehs-client
+	implementation 'com.saison.omni:ehs-client:0.1.2'
+	// zookeeper
+	implementation 'org.springframework.cloud:spring-cloud-starter-zookeeper-config:4.1.0'
+	// liquibase
+	implementation 'org.liquibase:liquibase-core'
+	// openapi
+	implementation 'org.springdoc:springdoc-openapi-ui:1.7.0'
+	// spring data - DB
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	// postgres
+	runtimeOnly 'org.postgresql:postgresql'
+	// rest api calls
+	implementation 'com.mashape.unirest:unirest-java:1.4.9'
+	// jackson
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	implementation 'com.fasterxml.jackson.core:jackson-core'
+	// gson
+	implementation 'com.google.code.gson:gson'
+	// collection utilities
+	implementation 'org.apache.commons:commons-collections4'
+	// string utils
+	implementation 'org.apache.commons:commons-lang3'
+	// lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+def profiles = 'local'
+
+bootRun {
+	args = ["--spring.profiles.active=" + profiles]
+}
